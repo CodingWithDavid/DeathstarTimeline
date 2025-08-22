@@ -1,0 +1,148 @@
+﻿@page "/"
+
+@layout BlankLayout
+
+@* Blazor component converted from the provided React/Tailwind code.
+   Uses Bootstrap 5 utility classes instead of Tailwind.
+   Drop this file into your Blazor project (e.g., /Pages or /Shared) and ensure Bootstrap is referenced.
+*@
+
+<div class="min-vh-100 bg-dark text-light p-4">
+    <div class="container-lg">
+        <h1 class="display-5 fw-bold text-center mb-5 text-light">Proforma Construction Timeline</h1>
+
+        <div class="position-relative py-5">
+            <!-- Progress Line -->
+            <div class="position-absolute top-50 start-0 end-0 translate-middle-y bg-secondary" style="height:4px;"></div>
+            <div class="position-absolute top-50 start-0 translate-middle-y bg-success" style="height:4px; width: 100%;"></div>
+
+            <!-- Milestones -->
+            <div class="d-flex justify-content-between align-items-start position-relative">
+                @foreach (var m in Milestones)
+                {
+                    <div class="d-flex flex-column align-items-center position-relative text-center" style="min-width: 80px;">
+                        <!-- Milestone Circle -->
+                        <button type="button"
+                                class="btn p-0 border-2 shadow position-relative"
+                                style="@GetCircleStyle(m)"
+                                title="@m.Description"
+                                @onmouseover="(() => HoveredStep = m.Step)"
+                                @onmouseout="(() => HoveredStep = null)"
+                                @onclick="(() => ToggleStep(m.Step))">
+                            <span class="d-flex align-items-center justify-content-center" style="width:80px;height:80px;border-radius:50%;font-size:1.5rem;">
+                                <!-- Image is now set as background in GetCircleStyle -->
+                            </span>
+                        </button>
+
+                        <!-- Step Number -->
+                        <div class="mt-2 small fw-bold @((SelectedStep == m.Step) ? "text-warning" : "text-secondary")" style="transform: @(SelectedStep == m.Step ? "scale(1.05)" : "none"); transition: all .2s;">
+                            Step @m.Step
+                        </div>
+
+                        <!-- Label -->
+                        <div class="text-uppercase text-muted mt-1 fw-semibold" style="font-size:.7rem; max-width: 6rem; transition: all .2s; color: @(SelectedStep == m.Step ? "#ffc107" : "#adb5bd") !important;">
+                            @m.Label
+                        </div>
+
+                        <!-- Description bubble (shows when selected or hovered) -->
+                        <div class="position-absolute translate-middle-x bg-dark px-2 py-1 rounded border text-nowrap"
+                             style="top:-2.5rem; left:50%; font-size:.75rem; opacity:@(SelectedStep == m.Step || HoveredStep == m.Step ? 1 : 0); transition: opacity .2s; border-color:@(SelectedStep == m.Step ? "#ffc107" : "#495057");">
+                            @m.Description
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Selected Step Details -->
+        @if (SelectedStep is not null)
+        {
+            var s = Milestones.First(ms => ms.Step == SelectedStep);
+            <div class="mt-4 p-4 rounded border border-warning bg-dark shadow">
+                <h3 class="h4 fw-bold text-warning mb-2">Step @SelectedStep: @s.Label</h3>
+                <p class="lead text-secondary mb-3">@s.Description</p>
+                <div class="display-3 text-center mb-3">@((MarkupString)GetImageHtml(s, "96px"))</div>
+                <button class="btn btn-warning fw-semibold text-dark" @onclick="ClearSelection">Clear Selection</button>
+            </div>
+        }
+
+        <!-- Legend -->
+        <div class="mt-5 p-4 rounded border border-secondary bg-dark">
+            <h2 class="h5 fw-bold mb-3 text-light">Construction Phases</h2>
+            <div class="row g-3">
+                @foreach (var m in Milestones)
+                {
+                    <div class="col-12 col-md-6">
+                        <div class="d-flex align-items-center gap-3 p-2 rounded @((SelectedStep == m.Step) ? "border border-warning bg-warning bg-opacity-10" : "")" role="button" tabindex="0"
+                             @onclick="(() => ToggleStep(m.Step))">
+                            <span class="fs-3">@((MarkupString)GetImageHtml(m, "48px"))</span>
+                            <div>
+                                <span class="fw-semibold text-light">Step @m.Step:</span>
+                                <span class="ms-2 text-secondary">@m.Description</span>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Fun Fact -->
+        <div class="mt-4 text-center text-secondary small">
+            <p>"That's no moon... it's a space station!"</p>
+            <p class="mt-1">- Obi-Wan Kenobi</p>
+            <p class="mt-3 text-warning">Click any step to highlight it!</p>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int? SelectedStep { get; set; }
+    private int? HoveredStep { get; set; }
+
+    private record Milestone(int Step, string Label, string Description, string ImagePath);
+
+    private List<Milestone> Milestones = new()
+    {
+        new Milestone(2,  "Framework",        "Basic skeletal structure",            "/images/step2.png"),
+        new Milestone(3,  "Inner Shell",      "Primary hull 25% complete",           "/images/step3.png"),
+        new Milestone(4,  "Outer Frame",      "Structural framework 40% done",       "/images/step4.png"),
+        new Milestone(5,  "Half Built",       "50% construction complete",           "/images/step5.png"),
+        new Milestone(6,  "Weapon Systems",   "Superlaser dish installed",           "/images/step6.png"),
+        new Milestone(7,  "Hull Plating",     "75% external plating done",           "/images/step7.png"),
+        new Milestone(8,  "Near Complete",    "90% systems operational",             "/images/step8.png"),
+        new Milestone(9,  "Final Testing",    "95% complete, testing phase",         "/images/step9.png"),
+        new Milestone(10, "Fully Operational", "Death Star complete!",                "/images/step10.png"),
+    };
+
+    private void ToggleStep(int step)
+    {
+        SelectedStep = (SelectedStep == step) ? null : step;
+    }
+
+    private void ClearSelection()
+    {
+        SelectedStep = null;
+    }
+
+    private string GetCircleStyle(Milestone m)
+    {
+        // Use the step image as background
+        var bgImage = $"url('{m.ImagePath}')";
+        var border = m.Step == 2 ? "#6c757d" : (m.Step == 10 ? "#f5c2c7" : "#0d6efd");
+        var opacity = (SelectedStep is not null && SelectedStep != m.Step) ? 0.5 : 1.0;
+        var scale = (SelectedStep == m.Step) ? 1.15 : 1.0;
+        var ring = (SelectedStep == m.Step) ? "box-shadow: 0 0 0 .35rem rgba(255,193,7,.35);" : string.Empty;
+        var pulse = (m.Step == 10 && SelectedStep != m.Step) ? "animation: ds-pulse 1.5s ease-in-out infinite;" : string.Empty;
+
+        return $"background-image:{bgImage}; background-size:cover; background-position:center; background-repeat:no-repeat; border-color:{border}; width:80px; height:80px; border-width:2px; border-style:solid; border-radius:50%; opacity:{opacity}; transform: scale({scale}); transition: all .2s; {ring} {pulse}";
+    }
+
+    private string GetImageHtml(Milestone m, string size = "48px")
+    {
+        return $"<img src='{m.ImagePath}' alt='Step {m.Step}' style='width:{size};height:{size};border-radius:10px;' />";
+    }
+}
+
+<style>
+
+</style>
