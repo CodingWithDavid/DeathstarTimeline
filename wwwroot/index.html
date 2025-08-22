@@ -4,6 +4,9 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>Deathstar</title>
     <base href="/" />
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
@@ -30,7 +33,16 @@
         <span class="dismiss">🗙</span>
     </div>
     <script src="_framework/blazor.webassembly.js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
+    <script>
+        // Force service worker update by adding timestamp parameter
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('service-worker.js?v=' + Date.now())
+                .then(registration => {
+                    // Check for updates immediately
+                    registration.update();
+                });
+        }
+    </script>
 </body>
 
 </html>

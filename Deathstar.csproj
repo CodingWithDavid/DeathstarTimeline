@@ -16,4 +16,30 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
+  <!-- Add build-time version injection -->
+  <Target Name="InjectVersionIntoIndex" BeforeTargets="Publish">
+    <PropertyGroup>
+      <BuildVersion>$([System.DateTime]::Now.ToString('yyyyMMddHHmmss'))</BuildVersion>
+    </PropertyGroup>
+    
+    <ItemGroup>
+      <IndexHtmlFile Include="wwwroot/index.html" />
+    </ItemGroup>
+    
+    <ReadLinesFromFile File="@(IndexHtmlFile)">
+      <Output TaskParameter="Lines" ItemName="IndexHtmlLines" />
+    </ReadLinesFromFile>
+    
+    <ItemGroup>
+      <UpdatedIndexHtmlLines Include="@(IndexHtmlLines)" />
+    </ItemGroup>
+    
+    <PropertyGroup>
+      <UpdatedIndexContent>@(UpdatedIndexHtmlLines->'%(Identity)', '%0a')</UpdatedIndexContent>
+      <UpdatedIndexContent>$(UpdatedIndexContent.Replace('Date.now()', '$(BuildVersion)'))</UpdatedIndexContent>
+    </PropertyGroup>
+    
+    <WriteLinesToFile File="@(IndexHtmlFile)" Lines="$(UpdatedIndexContent)" Overwrite="true" />
+  </Target>
+
 </Project>
