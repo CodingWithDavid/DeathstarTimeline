@@ -11,10 +11,23 @@
     <div class="container-lg">
         <h1 class="display-5 fw-bold text-center mb-5 text-light">Proforma Construction Timeline</h1>
 
+        <!-- Progress Controls -->
+        <div class="text-center mb-4">
+            <div class="d-inline-flex gap-3 align-items-center">
+                <label for="percentSlider" class="text-light fw-semibold">Progress:</label>
+                <input type="range" id="percentSlider" class="form-range" 
+                       min="0" max="100" step="10" 
+                       @bind="PercentDone" @bind:event="oninput"
+                       style="width: 200px;" />
+                <span class="text-warning fw-bold">@PercentDone%</span>
+            </div>
+        </div>
+
         <div class="position-relative py-5">
             <!-- Progress Line -->
             <div class="position-absolute top-50 start-0 end-0 translate-middle-y bg-secondary" style="height:4px;"></div>
-            <div class="position-absolute top-50 start-0 translate-middle-y bg-success" style="height:4px; width: 100%;"></div>
+            <div class="position-absolute top-50 start-0 translate-middle-y" 
+                 style="height:4px; width: @(CalculateProgressWidth())%; background-color: @(GetProgressColor()); transition: all 0.3s ease;"></div>
 
             <!-- Milestones -->
             <div class="d-flex justify-content-between align-items-start position-relative">
@@ -35,12 +48,12 @@
                         </button>
 
                         <!-- Step Number -->
-                        <div class="mt-2 small fw-bold @((SelectedStep == m.Step) ? "text-warning" : "text-secondary")" style="transform: @(SelectedStep == m.Step ? "scale(1.05)" : "none"); transition: all .2s;">
+                        <div class="mt-2 small fw-bold @((SelectedStep == m.Step) ? "text-warning" : GetStepTextColor(m.Step))" style="transform: @(SelectedStep == m.Step ? "scale(1.05)" : "none"); transition: all .2s;">
                             Step @m.Step
                         </div>
 
                         <!-- Label -->
-                        <div class="text-uppercase text-muted mt-1 fw-semibold" style="font-size:.7rem; max-width: 6rem; transition: all .2s; color: @(SelectedStep == m.Step ? "#ffc107" : "#adb5bd") !important;">
+                        <div class="text-uppercase mt-1 fw-semibold @(GetStepTextColor(m.Step))" style="font-size:.7rem; max-width: 6rem; transition: all .2s;">
                             @m.Label
                         </div>
 
@@ -90,7 +103,7 @@
         <div class="mt-4 text-center text-secondary small">
             <p>"That's no moon... it's a space station!"</p>
             <p class="mt-1">- Obi-Wan Kenobi</p>
-            <p class="mt-3 text-warning">Click any step to highlight it!</p>
+            <p class="mt-3 text-warning">Click any step to highlight it! Use the slider to adjust progress.</p>
         </div>
     </div>
 </div>
@@ -98,6 +111,7 @@
 @code {
     private int? SelectedStep { get; set; }
     private int? HoveredStep { get; set; }
+    private int PercentDone { get; set; } = 60; // Default to 60% as per your example
 
     private record Milestone(int Step, string Label, string Description, string ImagePath);
 
@@ -124,17 +138,51 @@
         SelectedStep = null;
     }
 
+    // Calculate progress width based on percentage
+    private double CalculateProgressWidth()
+    {
+        // Map percentage to steps (steps 2-10 = 9 steps total)
+        // Each step represents approximately 11.11% (100/9)
+        var progressSteps = Math.Floor(PercentDone / 11.11);
+        
+        // Convert to percentage of the timeline (0-100%)
+        return Math.Min(100, (progressSteps / 8.0) * 100); // 8 intervals between 9 steps
+    }
+
+    // Get darker green color based on progress
+    private string GetProgressColor()
+    {
+        // Calculate intensity based on percentage - darker green as progress increases
+        var intensity = Math.Min(1.0, PercentDone / 100.0);
+        var red = (int)(40 * (1 - intensity)); // Start with some red, reduce as progress increases
+        var green = (int)(120 + (135 * intensity)); // Start at medium green, go to full green
+        var blue = (int)(40 * (1 - intensity)); // Similar to red
+
+        return $"rgb({red}, {green}, {blue})";
+    }
+
+    // Get step text color based on whether it's completed
+    private string GetStepTextColor(int step)
+    {
+        var completedSteps = Math.Floor(PercentDone / 11.11) + 2; // +2 because steps start at 2
+        return step <= completedSteps ? "text-success" : "text-secondary";
+    }
+
     private string GetCircleStyle(Milestone m)
     {
         // Use the step image as background
         var bgImage = $"url('{m.ImagePath}')";
-        var border = m.Step == 2 ? "#6c757d" : (m.Step == 10 ? "#f5c2c7" : "#0d6efd");
-        var opacity = (SelectedStep is not null && SelectedStep != m.Step) ? 0.5 : 1.0;
-        var scale = (SelectedStep == m.Step) ? 1.15 : 1.0;
-        var ring = (SelectedStep == m.Step) ? "box-shadow: 0 0 0 .35rem rgba(255,193,7,.35);" : string.Empty;
+        var completedSteps = Math.Floor(PercentDone / 11.11) + 2; // +2 because steps start at 2
+        var isCompleted = m.Step <= completedSteps;
+        
+        var border = m.Step == 2 ? "#6c757d" : (m.Step == 10 ? "#f5c2c7" : (isCompleted ? "#198754" : "#0d6efd"));
+        var opacity = (SelectedStep is not null && SelectedStep != m.Step) ? 0.5 : (isCompleted ? 1.0 : 0.7);
+        var scale = (SelectedStep == m.Step) ? 1.15 : (isCompleted ? 1.05 : 1.0);
+        var ring = (SelectedStep == m.Step) ? "box-shadow: 0 0 0 .35rem rgba(255,193,7,.35);" : 
+                   (isCompleted ? "box-shadow: 0 0 0 .2rem rgba(25,135,84,.25);" : string.Empty);
         var pulse = (m.Step == 10 && SelectedStep != m.Step) ? "animation: ds-pulse 1.5s ease-in-out infinite;" : string.Empty;
 
-        return $"background-image:{bgImage}; background-size:cover; background-position:center; background-repeat:no-repeat; border-color:{border}; width:80px; height:80px; border-width:2px; border-style:solid; border-radius:50%; opacity:{opacity}; transform: scale({scale}); transition: all .2s; {ring} {pulse}";
+        return $"background-image:{bgImage}; background-size:cover; background-position:center; background-repeat:no-repeat; border-color:{border}; width:80px; height:80px; border-width:2px; border-style:solid; border-radius:50%; opacity:{opacity}; transform: scale({scale}); transition: all .3s; {ring} {pulse}";
     }
 
     private string GetImageHtml(Milestone m, string size = "48px")
